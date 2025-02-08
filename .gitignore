@@ -1,0 +1,8 @@
+.vscode
+
+*.dSYM
+
+snake
+
+sdlinit.c
+snake2.c
