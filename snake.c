@@ -19,6 +19,7 @@
 #define COLOR_GREEN 0x0000ff00
 
 typedef struct SnakeElement SnakeElement; 
+struct SnakeElement *head = NULL;
 struct SnakeElement *tail = NULL;
 
 struct SnakeElement {
@@ -122,30 +123,23 @@ void draw_apple(SDL_Surface *surface, const Apple *apple) {
   fill_cell(surface, apple->x, apple->y, COLOR_RED);
 }
 
-void reset_apple(SnakeElement snake, Apple *apple) {
-  // printf("Snake = %p \n", &snake);
-
+void reset_apple(SnakeElement *snake, Apple *apple) {
   // * New positions for apple
   apple->x = (int)(SCREEN_WIDTH * ((double)rand() / RAND_MAX)) / CELL_SIZE;
   apple->y = (int)(SCREEN_HEIGHT * ((double)rand() / RAND_MAX)) / CELL_SIZE;
 
-  // do {
-  //   if(snake.x == apple->x && snake.y == apple->y) {
-  //     reset_apple(snake, apple);
-  //     break;
-  //   } else {
-  //     if(snake.pnext != NULL) {
-  //       SnakeElement next = {
-  //           .x = snake.x,
-  //           .y = snake.y,
-  //           .pnext = snake.pnext,
-  //       };
-  //       snake = next;
-  //     }
-  //   }
-  // }
-  // while(snake.pnext != NULL);
-  // printf("New Apple Pos: %d %d\n", apple->x, apple->y);
+  // * Check apple does not get's placed on snake
+  SnakeElement *temp_snake = snake;
+  do {
+    // * If new apple gets placed on our snake then recalculate the apple positions
+    if(temp_snake->x == apple->x && temp_snake->y == apple->y) {
+      printf("--------- Get New Apple Positions ---------\n");
+      reset_apple(snake, apple);
+      break;
+    }
+    temp_snake = temp_snake->pnext;
+  }
+  while(temp_snake != NULL);
 }
 
 int main() {
@@ -172,6 +166,7 @@ int main() {
     .pnext = NULL
   };
 
+  head = &snake;
   tail = &snake;
 
   // * Initial Direction
@@ -208,16 +203,8 @@ int main() {
         case SDLK_DOWN: {
           direction.dy = 1;
         } break;
-        case SDLK_a: {
-          // * Add new block to tail of snake
-          SnakeElement *new_tail = createNode();
-          new_tail->x = tail->x;
-          new_tail->y = tail->y;
-          new_tail->head = false;
-          new_tail->pnext = tail;
-
-          tail = new_tail;
-
+        case SDLK_d: {
+          // * Show snake linked list
           SnakeElement *temp = tail;
           while(temp != NULL) {
             printf("%p %d -> ", (void *)temp, temp->head);
@@ -228,7 +215,6 @@ int main() {
         default:
           break;
         }
-
       } break;
       default:
         break;
@@ -239,22 +225,18 @@ int main() {
     move_snake(tail, &direction);
 
     // * Snake Ate apple
-    // printf("Snake = x: %d, y: %d\n", snake.x, snake.y);
-    // printf("Apple = x: %d, y: %d\n", apple.x, apple.y);
-    // if(snake.x == apple.x && snake.y == apple.y) {
-    //   printf("Cur Tail: %p, next: %p\n", (void *)tail, (void *)tail->pnext);
-    //   // SnakeElement *cur_tail = tail;
-    //   // printf("cur_tail: %p\n", cur_tail);
-    //   SnakeElement new_tail = {
-    //       .x = tail->x,
-    //       .y = tail->y,
-    //       .pnext = tail};
+    if(head->x == apple.x && head->y == apple.y) {
+      printf("Snake Ate Apple\n");
+      // * Add new block to tail of snake
+      SnakeElement *new_tail = createNode();
+      new_tail->x = tail->x;
+      new_tail->y = tail->y;
+      new_tail->head = false;
+      new_tail->pnext = tail;
+      tail = new_tail;
+      reset_apple(tail, &apple);
+    }
 
-    //   printf("new_tail: %p, new_next_tail: %p\n", (void *)&new_tail, (void *)new_tail.pnext);
-    //   printf("----------------------\n");
-    //   tail = &new_tail;
-    //   reset_apple(*tail, &apple);
-    // }
     draw_apple(surface, &apple);
 
     draw_snake(surface, tail);
@@ -262,8 +244,6 @@ int main() {
 
     SDL_UpdateWindowSurface(window);
     SDL_Delay(200);
-
-
   }
 }
 
